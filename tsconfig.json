@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    /* Basic Options */
+    "target": "es2017",
+    "lib": ["es2017"],
+    "module": "commonjs",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    /* Strict Type-Checking Options */
+    "strict": true,
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true
+  },
+  "exclude": [
+    "**/*.test.ts"
+  ]
+}
