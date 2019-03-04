@@ -1,7 +1,22 @@
 import { SagaExecution, SagaExecutionResult } from '../types';
 import request from '../../service/request';
+import webhookRequest from '../definitions/webhook-request';
 
 type SagaExecutor = (current: SagaExecution) => Promise<SagaExecutionResult>;
+
+const executeSuccessWebhook = async (execution: SagaExecution) => {
+  try {
+    await request(
+      execution.webhook,
+      webhookRequest,
+      execution.payload,
+    );
+    return { finished: true };
+  } catch (err) {
+    console.error(execution.id, err);
+    return { finished: false };
+  }
+};
 
 const execute: SagaExecutor = async (current) => {
   const toExecuteStep = current.missing[0];
@@ -23,7 +38,9 @@ const execute: SagaExecutor = async (current) => {
       },
     };
 
-    if (nextStep.missing.length === 0) return { finished: true };
+    if (nextStep.missing.length === 0) {
+      return executeSuccessWebhook(nextStep);
+    }
 
     return { nextStep, finished: false };
   } catch (err) {
