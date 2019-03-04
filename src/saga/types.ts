@@ -17,6 +17,7 @@ export interface SagaExecution {
   missing: SagaStep[];
   rollback: SagaStep[];
   payload: object;
+  webhook: string;
 }
 
 export interface SagaExecutionResult {
@@ -24,4 +25,4 @@ export interface SagaExecutionResult {
   nextStep?: SagaExecution;
 }
 
-export type SagaBuilder = (initialPayload: object, id?: string) => SagaExecution;
+export type SagaBuilder = (webhook: string, initialPayload: object, id?: string) => SagaExecution;

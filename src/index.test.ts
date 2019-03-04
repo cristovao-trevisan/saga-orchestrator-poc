@@ -12,10 +12,14 @@ const save = db.save as jest.Mock;
 const remove = db.remove as jest.Mock;
 const req = mockedRequest as jest.Mock;
 
-const param = {
+const params = {
   hotel: 1234,
   airplane: 4312,
   creditCard: 87654321,
+};
+const input = {
+  ...params,
+  webhook: 'localhost:6666',
 };
 const mockedReturn = { mock: true };
 
@@ -27,27 +31,32 @@ beforeEach(() => {
 
 test('should run successful saga', () => request(app)
   .post('/book-travel')
-  .send(param)
+  .send(input)
   .expect(200)
   .then((res) => {
     expect(res.text).toBe('booking');
     expect(save.mock.calls.length).toBe(3);
     expect(remove.mock.calls.length).toBe(1);
-    expect(req.mock.calls.length).toBe(3);
+    expect(req.mock.calls.length).toBe(4);
     expect(req.mock.calls[0]).toEqual([
       urls.hotel,
       { method: 'POST', path: '/' },
-      { initial: param },
+      { initial: params },
     ]);
     expect(req.mock.calls[1]).toEqual([
       urls.airplane,
       { method: 'POST', path: '/' },
-      { initial: param, hotel: mockedReturn },
+      { initial: params, hotel: mockedReturn },
     ]);
     expect(req.mock.calls[2]).toEqual([
       urls.payment,
       { method: 'POST', path: '/' },
-      { initial: param, hotel: mockedReturn, airplane: mockedReturn },
+      { initial: params, hotel: mockedReturn, airplane: mockedReturn },
+    ]);
+    expect(req.mock.calls[3]).toEqual([
+      input.webhook,
+      { method: 'POST', path: '/' },
+      { initial: params, hotel: mockedReturn, airplane: mockedReturn, payment: mockedReturn },
     ]);
   }));
 
@@ -59,7 +68,7 @@ test('should run saga with error and rollback', async () => {
 
   const res = await request(app)
     .post('/book-travel')
-    .send(param)
+    .send(input)
     .expect(200);
 
   expect(res.text).toBe('booking');
@@ -69,27 +78,27 @@ test('should run saga with error and rollback', async () => {
   expect(req.mock.calls[0]).toEqual([
     urls.hotel,
     { method: 'POST', path: '/' },
-    { initial: param },
+    { initial: params },
   ]);
   expect(req.mock.calls[1]).toEqual([
     urls.airplane,
     { method: 'POST', path: '/' },
-    { initial: param, hotel: mockedReturn },
+    { initial: params, hotel: mockedReturn },
   ]);
   expect(req.mock.calls[2]).toEqual([
     urls.payment,
     { method: 'POST', path: '/' },
-    { initial: param, hotel: mockedReturn, airplane: mockedReturn },
+    { initial: params, hotel: mockedReturn, airplane: mockedReturn },
   ]);
   expect(req.mock.calls[3]).toEqual([
     urls.airplane,
     { method: 'DELETE', path: '/' },
-    { initial: param, hotel: mockedReturn, airplane: mockedReturn },
+    { initial: params, hotel: mockedReturn, airplane: mockedReturn },
   ]);
   expect(req.mock.calls[4]).toEqual([
     urls.hotel,
     { method: 'DELETE', path: '/' },
-    { initial: param, hotel: mockedReturn, airplane: mockedReturn },
+    { initial: params, hotel: mockedReturn, airplane: mockedReturn },
   ]);
 });
 
@@ -102,7 +111,7 @@ test('should retry rollback until it succeeds', async () => {
 
   const res = await request(app)
     .post('/book-travel')
-    .send(param)
+    .send(input)
     .expect(200);
 
   expect(res.text).toBe('booking');
@@ -112,18 +121,18 @@ test('should retry rollback until it succeeds', async () => {
   expect(req.mock.calls[0]).toEqual([
     urls.hotel,
     { method: 'POST', path: '/' },
-    { initial: param },
+    { initial: params },
   ]);
   expect(req.mock.calls[1]).toEqual([
     urls.airplane,
     { method: 'POST', path: '/' },
-    { initial: param, hotel: mockedReturn },
+    { initial: params, hotel: mockedReturn },
   ]);
   [2, 3, 4].forEach((i) => {
     expect(req.mock.calls[i]).toEqual([
       urls.hotel,
       { method: 'DELETE', path: '/' },
-      { initial: param, hotel: mockedReturn },
+      { initial: params, hotel: mockedReturn },
     ]);
   });
 });

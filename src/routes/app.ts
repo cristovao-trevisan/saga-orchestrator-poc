@@ -8,7 +8,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/book-travel', async (req, res) => {
-  const saga = buildSaga(req.body);
+  const { webhook, ...params } = req.body;
+  const saga = buildSaga(webhook, params);
   await enqueue(saga);
   res.send('booking');
 });
